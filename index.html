@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brocade Weaving Interaction</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111114;
+        --muted: #77777d;
+        --hairline: rgba(17, 17, 20, 0.12);
+        --blue: #0071e3;
+        --white: #fbfbfd;
+        --soft: rgba(255, 255, 255, 0.78);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--white);
+        color: var(--ink);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display",
+          "SF Pro Text", "Helvetica Neue", sans-serif;
+      }
+
+      body {
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+      }
+
+      body::before {
+        position: fixed;
+        inset: -20vh -12vw;
+        z-index: 0;
+        pointer-events: none;
+        content: "";
+        background:
+          radial-gradient(circle at 50% 42%, rgba(235, 221, 189, 0.24), transparent 30%),
+          radial-gradient(circle at 22% 68%, rgba(88, 135, 126, 0.08), transparent 26%),
+          radial-gradient(circle at 82% 66%, rgba(192, 91, 48, 0.07), transparent 24%),
+          linear-gradient(180deg, #ffffff 0%, #f7f6f2 100%);
+      }
+
+      #app,
+      #stage {
+        position: fixed;
+        inset: 0;
+      }
+
+      #stage {
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        cursor: crosshair;
+        touch-action: none;
+        z-index: 1;
+      }
+
+      #handVideo {
+        position: fixed;
+        width: 1px;
+        height: 1px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      #uploadPanel {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        z-index: 4;
+        display: grid;
+        justify-items: center;
+        gap: 14px;
+        transform: translate(-50%, -50%);
+        transition:
+          top 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          opacity 320ms ease;
+      }
+
+      body.has-design #uploadPanel {
+        top: 24px;
+        transform: translate(-50%, 0);
+      }
+
+      #uploadButton {
+        min-width: 168px;
+        height: 48px;
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--ink);
+        box-shadow:
+          0 18px 42px rgba(0, 0, 0, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        font: 500 15px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          sans-serif;
+        letter-spacing: 0;
+        backdrop-filter: blur(20px) saturate(1.24);
+        -webkit-backdrop-filter: blur(20px) saturate(1.24);
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease,
+          color 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      #uploadButton:hover {
+        transform: translateY(-1px);
+        border-color: rgba(0, 113, 227, 0.32);
+        color: var(--blue);
+        box-shadow:
+          0 22px 50px rgba(0, 0, 0, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.96);
+      }
+
+      #uploadButton:active {
+        transform: scale(0.985);
+      }
+
+      #uploadInput {
+        display: none;
+      }
+
+      #status {
+        min-height: 17px;
+        max-width: min(76vw, 420px);
+        color: var(--muted);
+        font: 400 13px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          sans-serif;
+        text-align: center;
+        letter-spacing: 0;
+      }
+
+      #progressRail {
+        position: fixed;
+        left: 50%;
+        bottom: 30px;
+        z-index: 3;
+        width: min(240px, 48vw);
+        height: 2px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(17, 17, 20, 0.08);
+        opacity: 0;
+        transform: translateX(-50%);
+        transition: opacity 320ms ease;
+      }
+
+      body.has-design #progressRail {
+        opacity: 1;
+      }
+
+      #progressFill {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--ink);
+        transform: scaleX(0);
+        transform-origin: left center;
+      }
+
+      #quietHint {
+        position: fixed;
+        right: 28px;
+        bottom: 24px;
+        z-index: 3;
+        color: rgba(17, 17, 20, 0.42);
+        font: 400 12px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text",
+          sans-serif;
+        opacity: 0;
+        transition: opacity 320ms ease;
+      }
+
+      body.has-design #quietHint {
+        opacity: 1;
+      }
+
+      @media (max-width: 700px) {
+        body.has-design #uploadPanel {
+          top: 18px;
+        }
+
+        #uploadButton {
+          min-width: 150px;
+          height: 44px;
+          font-size: 14px;
+        }
+
+        #quietHint {
+          display: none;
+        }
+
+      }
+    </style>
+  </head>
+  <body>
+    <main id="app" aria-label="织锦交互">
+      <canvas id="stage"></canvas>
+
+      <section id="uploadPanel" aria-label="上传纹样">
+        <button id="uploadButton" type="button">上传纹样</button>
+        <input id="uploadInput" type="file" accept="image/*" />
+        <div id="status" aria-live="polite">上传纹样后启用织梭</div>
+      </section>
+
+      <div id="progressRail" aria-hidden="true">
+        <div id="progressFill"></div>
+      </div>
+      <div id="quietHint">捏合织梭并移动</div>
+      <video id="handVideo" playsinline muted></video>
+    </main>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
