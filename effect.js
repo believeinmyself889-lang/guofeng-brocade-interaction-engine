@@ -201,13 +201,26 @@ void main() {
 
   vColor = colorPack;
   vReveal = reveal;
-  vAlpha = enabled * (0.08 + reveal * 0.88 + nearby * 0.26 + shuttleField * overShuttle * 0.28 + isWarp * (diffuseMask + horizontalContact * verticalFalloff * motion) * 0.24);
+  float weftInk = 1.0 - isWarp;
+  vAlpha = enabled * (
+    0.035 +
+    reveal * (0.76 + weftInk * 0.3) +
+    nearby * (0.16 + weftInk * 0.12) +
+    shuttleField * overShuttle * 0.28 +
+    isWarp * (diffuseMask + horizontalContact * verticalFalloff * motion) * 0.18
+  );
   vFiberSeed = fiberSeed;
   vWarpWave = isWarp * (abs(ambientWave) * 34.0 + diffuseMask * 0.85 + abs(diffuseWave) * diffuseMask * 0.35 + abs(warpSway) * 27.0);
 
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;
-  gl_PointSize = (1.05 + (1.0 - luma) * 2.45 + reveal * 0.8 + shuttleField * 0.8 + isWarp * ((diffuseMask + horizontalContact * verticalFalloff * motion) * 0.95 + abs(ambientWave) * 16.0)) * uPixelRatio * uPointScale;
+  gl_PointSize = (
+    0.9 +
+    (1.0 - luma) * 2.85 +
+    reveal * (0.62 + weftInk * 0.82) +
+    shuttleField * 0.8 +
+    isWarp * ((diffuseMask + horizontalContact * verticalFalloff * motion) * 0.65 + abs(ambientWave) * 9.0)
+  ) * uPixelRatio * uPointScale;
 }
 `;
 
@@ -227,10 +240,12 @@ void main() {
   float alpha = strand * cap * vAlpha;
   if (alpha < 0.012) discard;
 
-  float fiber = 0.82 + 0.18 * sin((p.x + p.y) * 18.0 + vFiberSeed * 18.0);
+  float fiber = 0.9 + 0.1 * sin((p.x + p.y) * 18.0 + vFiberSeed * 18.0);
   vec3 color = vColor.rgb * fiber;
-  color = mix(color * 1.08, color + vec3(0.035), vReveal * 0.22);
-  color += vec3(0.08, 0.065, 0.035) * clamp(vWarpWave, 0.0, 1.0);
+  float threadLuma = dot(color, vec3(0.299, 0.587, 0.114));
+  color = vec3(threadLuma) + (color - vec3(threadLuma)) * 1.18;
+  color = mix(color * 1.06, color + vec3(0.045), vReveal * 0.12);
+  color += vec3(0.055, 0.045, 0.022) * clamp(vWarpWave, 0.0, 1.0);
 
   gl_FragColor = vec4(color, alpha);
 }
@@ -258,14 +273,14 @@ void main() {
   float vignette = smoothstep(0.88, 0.18, length(centered));
   float warp = sin(vUv.x * 720.0) * 0.5 + 0.5;
   float weft = sin(vUv.y * 680.0) * 0.5 + 0.5;
-  float cross = warp * 0.012 + weft * 0.011;
+  float cross = warp * 0.007 + weft * 0.0065;
   float broad = sin((vUv.x + vUv.y) * 36.0) * 0.004;
   float clothBreath = sin(vUv.x * 21.0 + uTime * 0.42) * sin(vUv.y * 17.0 - uTime * 0.34) * 0.006;
   float dNeedle = length((vUv - uNeedleUv.xy) * vec2(1.5, 1.0));
   float pressure = exp(-dNeedle * 9.0) * uNeedleUv.z;
   float ripple = sin(dNeedle * 58.0 - uTime * 14.0) * exp(-dNeedle * 5.4) * uNeedleUv.z;
   float relief = clothBreath + pressure * 0.012 + ripple * 0.024;
-  vec3 base = vec3(0.982, 0.981, 0.972);
+  vec3 base = vec3(0.988, 0.986, 0.978);
   vec3 color = base - cross + broad + vignette * 0.018;
   color += vec3(0.62, 0.55, 0.36) * max(relief, 0.0);
   color -= vec3(0.18, 0.16, 0.1) * max(-relief, 0.0);
@@ -474,7 +489,7 @@ export function createPostMaterial() {
     uniforms: {
       tDiffuse: { value: null },
       uResolution: { value: new THREE.Vector2(1, 1) },
-      uBloomStrength: { value: 0.16 },
+      uBloomStrength: { value: 0.12 },
     },
     depthTest: false,
     depthWrite: false,

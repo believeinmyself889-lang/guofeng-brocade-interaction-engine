@@ -405,7 +405,7 @@ export class EmbroideryRenderer {
       this.threadMaterial.uniforms.uPosition.value = this.currentPosition;
       this.threadMaterial.uniforms.uProgress.value = this.progress;
       this.threadMaterial.uniforms.uPixelRatio.value = this.pixelRatio;
-      this.threadMaterial.uniforms.uPointScale.value = Math.max(0.78, Math.min(1.55, window.innerHeight / 860));
+      this.threadMaterial.uniforms.uPointScale.value = Math.max(0.92, Math.min(1.72, window.innerHeight / 760));
       this.threadMaterial.uniforms.uTime.value = elapsed;
       this.threadMaterial.uniforms.uShuttleMotion.value = this.shuttleMotionEnergy;
       this.threadMaterial.uniforms.uNeedle.value.copy(this.visualNeedle);

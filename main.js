@@ -236,9 +236,9 @@ function packWeaveTextures(pixels, luminance, imageWidth, imageHeight, imageAspe
     const g = pixels[p + 1] / 255;
     const b = pixels[p + 2] / 255;
     const l = luminance[py * imageWidth + px];
-    const saturation = Math.max(r, g, b) - Math.min(r, g, b);
-    const motif = clamp(alpha * (saturation * 1.45 + (1 - l) * 0.72), 0, 1);
     const edge = estimateEdge(luminance, imageWidth, imageHeight, px, py);
+    const saturation = Math.max(r, g, b) - Math.min(r, g, b);
+    const motif = clamp(alpha * (saturation * 1.75 + (1 - l) * 0.86 + edge * 0.48), 0, 1);
     const idx = i * 4;
     const x = (u - 0.5) * bounds.width + (random() - 0.5) * 0.0012;
     const y = (0.5 - v) * bounds.height + (random() - 0.5) * 0.0012;
@@ -246,8 +246,8 @@ function packWeaveTextures(pixels, luminance, imageWidth, imageHeight, imageAspe
     const overUnder = motif > 0.18 || interlace === 0 ? 0.038 : 0.012;
     const warpLift = 0.015 + interlace * 0.006;
     const z = isWeft
-      ? 0.012 + overUnder + edge * 0.018 + motif * 0.016
-      : 0.014 + warpLift + edge * 0.004;
+      ? 0.016 + overUnder + edge * 0.026 + motif * 0.025
+      : 0.01 + warpLift + edge * 0.002;
     const order = isWeft
       ? clamp(0.075 + v * 0.905 + (random() - 0.5) * 0.006, 0, 1)
       : -0.06 + sampleT * 0.012 + laneT * 0.004 + random() * 0.003;
@@ -261,7 +261,7 @@ function packWeaveTextures(pixels, luminance, imageWidth, imageHeight, imageAspe
     color[idx] = thread.r;
     color[idx + 1] = thread.g;
     color[idx + 2] = thread.b;
-    color[idx + 3] = isWeft ? 0.3 + motif * 0.7 : 0.82;
+    color[idx + 3] = isWeft ? 0.66 + motif * 0.34 : 0.46;
 
     position[idx] = isWeft ? x + (random() - 0.5) * 0.42 : x;
     position[idx + 1] = isWeft ? bounds.height * 0.66 + random() * 0.5 : y;
@@ -329,7 +329,7 @@ function extractDominantColor(pixels) {
 
 function makeWarpBaseColor(color) {
   const luma = color.r * 0.299 + color.g * 0.587 + color.b * 0.114;
-  const targetLuma = clamp(luma, 0.16, 0.86);
+  const targetLuma = clamp(luma * 1.08 + 0.04, 0.22, 0.9);
   const lumaScale = targetLuma / Math.max(luma, 0.001);
   return {
     r: clamp(color.r * lumaScale, 0.025, 0.96),
@@ -431,15 +431,22 @@ function packTextures(points, imageWidth, imageHeight, imageAspect) {
 }
 
 function tuneThreadColor(r, g, b, luma, motif = 1, isWeft = false) {
-  const lift = 0.045;
-  const contrast = isWeft ? 1.16 : 1.06;
+  const lift = isWeft ? 0.018 : 0.04;
+  const contrast = isWeft ? 1.42 : 1.04;
   const neutral = isWeft ? { r: 0.82, g: 0.66, b: 0.38 } : { r: 0.74, g: 0.77, b: 0.78 };
-  const picked = {
+  let picked = {
     r: clamp((r - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
     g: clamp((g - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
     b: clamp((b - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
   };
-  const mixAmount = clamp(0.35 + motif * 0.65, 0, 1);
+  const gray = picked.r * 0.299 + picked.g * 0.587 + picked.b * 0.114;
+  const saturationBoost = isWeft ? 1.32 + motif * 0.24 : 1.05;
+  picked = {
+    r: clamp(gray + (picked.r - gray) * saturationBoost, 0.02, 1),
+    g: clamp(gray + (picked.g - gray) * saturationBoost, 0.02, 1),
+    b: clamp(gray + (picked.b - gray) * saturationBoost, 0.02, 1),
+  };
+  const mixAmount = isWeft ? clamp(0.82 + motif * 0.18, 0, 1) : clamp(0.28 + motif * 0.48, 0, 1);
   return {
     r: clamp(neutral.r * (1 - mixAmount) + picked.r * mixAmount, 0.02, 1),
     g: clamp(neutral.g * (1 - mixAmount) + picked.g * mixAmount, 0.02, 1),
