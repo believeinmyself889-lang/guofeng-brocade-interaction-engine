@@ -1,0 +1,23 @@
+# Local research and manuscript artifacts
+paper/
+
+# Dependency and build folders
+node_modules/
+dist/
+build/
+
+# Environment and local secrets
+.env
+.env.*
+*.local
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
