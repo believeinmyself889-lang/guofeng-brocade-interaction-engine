@@ -39,6 +39,3 @@ http://127.0.0.1:5173/
 
 Opening `index.html` directly may show only the initial page because the app uses ES modules and browser security rules for local files.
 
-## Privacy Boundary
-
-Research manuscripts, LaTeX files, review notes, and local build artifacts are intentionally excluded from this repository through `.gitignore`.
