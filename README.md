@@ -6,8 +6,9 @@ A browser-based interactive brocade weaving prototype. It converts uploaded moti
 
 - Single-page WebGL prototype using one HTML file and four JavaScript modules.
 - Image-driven warp and weft particle generation.
-- Dominant-color warp ground and image-sampled weft colors.
+- Dominant-color warp ground with image-faithful weft colors.
 - Gesture-oriented shuttle interaction with pointer fallback.
+- Subtle thread thickness and day/night surface controls.
 - Orthographic rendering for stable 2D fabric interaction.
 - Eight bundled motif examples in `example/`.
 

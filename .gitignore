@@ -1,5 +1,5 @@
-# Local research and manuscript artifacts
-paper/
+# Manuscript sources, figures, and deliverables are versioned.
+# LaTeX build artifacts are ignored by paper/.gitignore.
 
 # Dependency and build folders
 node_modules/

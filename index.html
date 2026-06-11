@@ -7,13 +7,46 @@
     <link rel="icon" href="data:," />
     <style>
       :root {
+        color-scheme: dark;
+        --ink: #f5f5f7;
+        --ink-rgb: 245, 245, 247;
+        --muted: rgba(245, 245, 247, 0.58);
+        --hairline: rgba(255, 255, 255, 0.14);
+        --surface: #050505;
+        --surface-rgb: 5, 5, 5;
+        --blue: var(--ink);
+        --white: var(--surface);
+        --soft: rgba(22, 22, 24, 0.7);
+        --button-shadow: rgba(0, 0, 0, 0.34);
+        --button-shadow-hover: rgba(0, 0, 0, 0.44);
+        --inset-highlight: rgba(255, 255, 255, 0.1);
+        --inset-highlight-hover: rgba(255, 255, 255, 0.16);
+        --glow-center: rgba(255, 255, 255, 0.055);
+        --glow-left: rgba(88, 135, 126, 0.055);
+        --glow-right: rgba(192, 91, 48, 0.045);
+        --page-gradient: linear-gradient(180deg, #070707 0%, #050505 100%);
+        --track: rgba(255, 255, 255, 0.14);
+      }
+
+      body[data-theme="light"] {
         color-scheme: light;
-        --ink: #111114;
-        --muted: #77777d;
-        --hairline: rgba(17, 17, 20, 0.12);
-        --blue: #0071e3;
-        --white: #fbfbfd;
-        --soft: rgba(255, 255, 255, 0.78);
+        --ink: #15130f;
+        --ink-rgb: 21, 19, 15;
+        --muted: rgba(21, 19, 15, 0.58);
+        --hairline: rgba(21, 19, 15, 0.14);
+        --surface: #f8f3e9;
+        --surface-rgb: 248, 243, 233;
+        --white: var(--surface);
+        --soft: rgba(255, 252, 244, 0.76);
+        --button-shadow: rgba(68, 48, 23, 0.12);
+        --button-shadow-hover: rgba(68, 48, 23, 0.16);
+        --inset-highlight: rgba(255, 255, 255, 0.8);
+        --inset-highlight-hover: rgba(255, 255, 255, 0.95);
+        --glow-center: rgba(216, 170, 67, 0.11);
+        --glow-left: rgba(91, 184, 173, 0.065);
+        --glow-right: rgba(216, 103, 63, 0.055);
+        --page-gradient: linear-gradient(180deg, #fbf7ef 0%, #f8f3e9 100%);
+        --track: rgba(21, 19, 15, 0.12);
       }
 
       * {
@@ -44,10 +77,10 @@
         pointer-events: none;
         content: "";
         background:
-          radial-gradient(circle at 50% 42%, rgba(235, 221, 189, 0.24), transparent 30%),
-          radial-gradient(circle at 22% 68%, rgba(88, 135, 126, 0.08), transparent 26%),
-          radial-gradient(circle at 82% 66%, rgba(192, 91, 48, 0.07), transparent 24%),
-          linear-gradient(180deg, #ffffff 0%, #f7f6f2 100%);
+          radial-gradient(circle at 50% 42%, var(--glow-center), transparent 28%),
+          radial-gradient(circle at 22% 68%, var(--glow-left), transparent 25%),
+          radial-gradient(circle at 82% 66%, var(--glow-right), transparent 24%),
+          var(--page-gradient);
       }
 
       #app,
@@ -101,8 +134,8 @@
         background: var(--soft);
         color: var(--ink);
         box-shadow:
-          0 18px 42px rgba(0, 0, 0, 0.08),
-          inset 0 1px 0 rgba(255, 255, 255, 0.9);
+          0 18px 42px var(--button-shadow),
+          inset 0 1px 0 var(--inset-highlight);
         font: 500 15px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text",
           sans-serif;
         letter-spacing: 0;
@@ -117,11 +150,11 @@
 
       #uploadButton:hover {
         transform: translateY(-1px);
-        border-color: rgba(0, 113, 227, 0.32);
+        border-color: rgba(var(--ink-rgb), 0.34);
         color: var(--blue);
         box-shadow:
-          0 22px 50px rgba(0, 0, 0, 0.1),
-          inset 0 1px 0 rgba(255, 255, 255, 0.96);
+          0 22px 50px var(--button-shadow-hover),
+          inset 0 1px 0 var(--inset-highlight-hover);
       }
 
       #uploadButton:active {
@@ -151,7 +184,7 @@
         height: 2px;
         overflow: hidden;
         border-radius: 999px;
-        background: rgba(17, 17, 20, 0.08);
+        background: var(--track);
         opacity: 0;
         transform: translateX(-50%);
         transition: opacity 320ms ease;
@@ -170,12 +203,101 @@
         transform-origin: left center;
       }
 
+      #controlPanel {
+        position: fixed;
+        left: 24px;
+        bottom: 22px;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-height: 42px;
+        padding: 8px 11px;
+        border: 1px solid var(--hairline);
+        border-radius: 999px;
+        background: var(--soft);
+        box-shadow:
+          0 18px 42px var(--button-shadow),
+          inset 0 1px 0 var(--inset-highlight);
+        color: var(--ink);
+        backdrop-filter: blur(20px) saturate(1.22);
+        -webkit-backdrop-filter: blur(20px) saturate(1.22);
+      }
+
+      #threadControl {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 126px;
+      }
+
+      .threadGlyph {
+        position: relative;
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+      }
+
+      .threadGlyph::before {
+        position: absolute;
+        left: 8px;
+        top: 2px;
+        width: 3px;
+        height: 14px;
+        border-radius: 999px;
+        background: var(--ink);
+        box-shadow: 0 0 9px rgba(var(--ink-rgb), 0.28);
+        content: "";
+      }
+
+      #threadScale {
+        width: 96px;
+        accent-color: var(--ink);
+      }
+
+      #themeSwatches {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .swatch {
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 50%;
+        background: var(--swatch);
+        box-shadow:
+          inset 0 1px 0 rgba(255, 255, 255, 0.18),
+          0 0 0 0 rgba(var(--ink-rgb), 0);
+        transition:
+          transform 160ms ease,
+          border-color 160ms ease,
+          box-shadow 160ms ease;
+      }
+
+      .swatch[data-accent] {
+        display: none;
+      }
+
+      .swatch:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.34);
+      }
+
+      .swatch.is-active {
+        box-shadow:
+          0 0 0 3px rgba(var(--ink-rgb), 0.22),
+          inset 0 1px 0 rgba(255, 255, 255, 0.18);
+      }
+
       #quietHint {
         position: fixed;
         right: 28px;
         bottom: 24px;
         z-index: 3;
-        color: rgba(17, 17, 20, 0.42);
+        color: var(--muted);
         font: 400 12px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text",
           sans-serif;
         opacity: 0;
@@ -201,10 +323,24 @@
           display: none;
         }
 
+        #controlPanel {
+          left: 50%;
+          bottom: 18px;
+          transform: translateX(-50%);
+        }
+
+        #threadControl {
+          width: 108px;
+        }
+
+        #threadScale {
+          width: 78px;
+        }
+
       }
     </style>
   </head>
-  <body>
+  <body data-theme="dark">
     <main id="app" aria-label="织锦交互">
       <canvas id="stage"></canvas>
 
@@ -218,6 +354,44 @@
         <div id="progressFill"></div>
       </div>
       <div id="quietHint">捏合织梭并移动</div>
+      <div id="controlPanel" aria-label="视觉设置">
+        <label id="threadControl" aria-label="线宽">
+          <span class="threadGlyph" aria-hidden="true"></span>
+          <input id="threadScale" type="range" min="0.9" max="1.16" step="0.01" value="1.06" />
+        </label>
+        <div id="themeSwatches" aria-label="界面颜色">
+          <button
+            class="swatch is-active"
+            type="button"
+            aria-label="白色界面"
+            data-theme="dark"
+            style="--swatch: #050505"
+          ></button>
+          <button
+            class="swatch"
+            type="button"
+            aria-label="青色界面"
+            data-theme="light"
+            style="--swatch: #f8f3e9"
+          ></button>
+          <button
+            class="swatch"
+            type="button"
+            aria-label="朱色界面"
+            data-accent="#d8673f"
+            data-accent-rgb="216, 103, 63"
+            style="--swatch: #d8673f"
+          ></button>
+          <button
+            class="swatch"
+            type="button"
+            aria-label="金色界面"
+            data-accent="#d8aa43"
+            data-accent-rgb="216, 170, 67"
+            style="--swatch: #d8aa43"
+          ></button>
+        </div>
+      </div>
       <video id="handVideo" playsinline muted></video>
     </main>
 

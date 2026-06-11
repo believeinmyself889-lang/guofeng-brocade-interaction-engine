@@ -12,6 +12,8 @@ const uploadButton = document.querySelector("#uploadButton");
 const uploadInput = document.querySelector("#uploadInput");
 const statusNode = document.querySelector("#status");
 const progressFill = document.querySelector("#progressFill");
+const threadScaleInput = document.querySelector("#threadScale");
+const themeSwatches = document.querySelector("#themeSwatches");
 
 const renderer = new EmbroideryRenderer(canvas);
 const capability = renderer.init();
@@ -39,10 +41,27 @@ uploadInput.addEventListener("change", async () => {
   uploadInput.value = "";
 });
 
+threadScaleInput?.addEventListener("input", () => {
+  renderer.setThreadScale(Number(threadScaleInput.value) || 1);
+});
+renderer.setThreadScale(Number(threadScaleInput?.value) || 1);
+
+themeSwatches?.addEventListener("click", (event) => {
+  const swatch = event.target.closest(".swatch");
+  const theme = swatch?.dataset.theme;
+  if (!theme) return;
+  document.body.dataset.theme = theme;
+  renderer.setSurfaceMode(theme);
+  themeSwatches.querySelectorAll(".swatch").forEach((item) => {
+    item.classList.toggle("is-active", item === swatch);
+  });
+});
+renderer.setSurfaceMode(document.body.dataset.theme || "dark");
+
 requestAnimationFrame(tick);
 
 async function loadImageAsEmbroidery(file) {
-  setStatus("正在提取主色与经纬点阵");
+  setStatus("正在生成主色经线与纬线点阵");
   uploadButton.disabled = true;
 
   try {
@@ -261,7 +280,7 @@ function packWeaveTextures(pixels, luminance, imageWidth, imageHeight, imageAspe
     color[idx] = thread.r;
     color[idx + 1] = thread.g;
     color[idx + 2] = thread.b;
-    color[idx + 3] = isWeft ? 0.66 + motif * 0.34 : 0.46;
+    color[idx + 3] = isWeft ? 1 : 0.98;
 
     position[idx] = isWeft ? x + (random() - 0.5) * 0.42 : x;
     position[idx + 1] = isWeft ? bounds.height * 0.66 + random() * 0.5 : y;
@@ -295,7 +314,7 @@ function estimateEdge(luminance, width, height, x, y) {
 
 function extractDominantColor(pixels) {
   const buckets = new Map();
-  let fallback = { count: 0, r: 0.74, g: 0.77, b: 0.78 };
+  let fallback = { count: 0, r: 0.72, g: 0.72, b: 0.72 };
 
   for (let p = 0; p < pixels.length; p += 4) {
     const alpha = pixels[p + 3] / 255;
@@ -328,13 +347,10 @@ function extractDominantColor(pixels) {
 }
 
 function makeWarpBaseColor(color) {
-  const luma = color.r * 0.299 + color.g * 0.587 + color.b * 0.114;
-  const targetLuma = clamp(luma * 1.08 + 0.04, 0.22, 0.9);
-  const lumaScale = targetLuma / Math.max(luma, 0.001);
   return {
-    r: clamp(color.r * lumaScale, 0.025, 0.96),
-    g: clamp(color.g * lumaScale, 0.025, 0.96),
-    b: clamp(color.b * lumaScale, 0.025, 0.96),
+    r: color.r,
+    g: color.g,
+    b: color.b,
   };
 }
 
@@ -431,26 +447,10 @@ function packTextures(points, imageWidth, imageHeight, imageAspect) {
 }
 
 function tuneThreadColor(r, g, b, luma, motif = 1, isWeft = false) {
-  const lift = isWeft ? 0.018 : 0.04;
-  const contrast = isWeft ? 1.42 : 1.04;
-  const neutral = isWeft ? { r: 0.82, g: 0.66, b: 0.38 } : { r: 0.74, g: 0.77, b: 0.78 };
-  let picked = {
-    r: clamp((r - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
-    g: clamp((g - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
-    b: clamp((b - 0.5) * contrast + 0.5 + lift * (1 - luma), 0.02, 1),
-  };
-  const gray = picked.r * 0.299 + picked.g * 0.587 + picked.b * 0.114;
-  const saturationBoost = isWeft ? 1.32 + motif * 0.24 : 1.05;
-  picked = {
-    r: clamp(gray + (picked.r - gray) * saturationBoost, 0.02, 1),
-    g: clamp(gray + (picked.g - gray) * saturationBoost, 0.02, 1),
-    b: clamp(gray + (picked.b - gray) * saturationBoost, 0.02, 1),
-  };
-  const mixAmount = isWeft ? clamp(0.82 + motif * 0.18, 0, 1) : clamp(0.28 + motif * 0.48, 0, 1);
   return {
-    r: clamp(neutral.r * (1 - mixAmount) + picked.r * mixAmount, 0.02, 1),
-    g: clamp(neutral.g * (1 - mixAmount) + picked.g * mixAmount, 0.02, 1),
-    b: clamp(neutral.b * (1 - mixAmount) + picked.b * mixAmount, 0.02, 1),
+    r,
+    g,
+    b,
   };
 }
 

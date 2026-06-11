@@ -22,6 +22,8 @@ export class EmbroideryRenderer {
     this.motionEnergy = 0;
     this.shuttleMotionEnergy = 0;
     this.hasDesign = false;
+    this.threadScale = 1.06;
+    this.surfaceMode = "dark";
   }
 
   init() {
@@ -32,7 +34,7 @@ export class EmbroideryRenderer {
       powerPreference: "high-performance",
       preserveDrawingBuffer: false,
     });
-    this.renderer.setClearColor(0xfbfbfd, 1);
+    this.renderer.setClearColor(0x050505, 1);
     this.renderer.setPixelRatio(this.pixelRatio);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
@@ -40,7 +42,7 @@ export class EmbroideryRenderer {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0xfbfbfd);
+    this.scene.background = new THREE.Color(0x050505);
 
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -10, 10);
     this.camera.position.set(0, 0, 3);
@@ -331,6 +333,21 @@ export class EmbroideryRenderer {
     };
   }
 
+  setThreadScale(value) {
+    this.threadScale = THREE.MathUtils.clamp(value, 0.9, 1.16);
+  }
+
+  setSurfaceMode(mode) {
+    const isLight = mode === "light";
+    const color = isLight ? 0xf8f3e9 : 0x050505;
+    this.surfaceMode = isLight ? "light" : "dark";
+    this.renderer?.setClearColor(color, 1);
+    if (this.scene?.background?.setHex) this.scene.background.setHex(color);
+    if (this.fabric?.material?.uniforms?.uSurfaceMode) {
+      this.fabric.material.uniforms.uSurfaceMode.value = isLight ? 1 : 0;
+    }
+  }
+
   setNeedle(world, pinch, weaveEnergy = 0, shuttleEnergy = 0) {
     const weaveInfluence = pinch ? THREE.MathUtils.clamp(weaveEnergy, 0, 1) : 0;
     const shuttleInfluence = pinch ? THREE.MathUtils.clamp(shuttleEnergy, 0, 1) : 0;
@@ -405,7 +422,8 @@ export class EmbroideryRenderer {
       this.threadMaterial.uniforms.uPosition.value = this.currentPosition;
       this.threadMaterial.uniforms.uProgress.value = this.progress;
       this.threadMaterial.uniforms.uPixelRatio.value = this.pixelRatio;
-      this.threadMaterial.uniforms.uPointScale.value = Math.max(0.92, Math.min(1.72, window.innerHeight / 760));
+      this.threadMaterial.uniforms.uPointScale.value =
+        Math.max(1.24, Math.min(2.18, window.innerHeight / 620)) * this.threadScale;
       this.threadMaterial.uniforms.uTime.value = elapsed;
       this.threadMaterial.uniforms.uShuttleMotion.value = this.shuttleMotionEnergy;
       this.threadMaterial.uniforms.uNeedle.value.copy(this.visualNeedle);

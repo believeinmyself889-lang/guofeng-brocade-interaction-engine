@@ -202,24 +202,22 @@ void main() {
   vColor = colorPack;
   vReveal = reveal;
   float weftInk = 1.0 - isWarp;
-  vAlpha = enabled * (
-    0.035 +
-    reveal * (0.76 + weftInk * 0.3) +
-    nearby * (0.16 + weftInk * 0.12) +
-    shuttleField * overShuttle * 0.28 +
-    isWarp * (diffuseMask + horizontalContact * verticalFalloff * motion) * 0.18
+  float warpAlpha = isWarp * (0.66 + abs(ambientWave) * 5.0 + (diffuseMask + horizontalContact * verticalFalloff * motion) * 0.2);
+  float weftAlpha = weftInk * (
+    min(1.0, reveal + nearby * motion * 0.055 + shuttleField * overShuttle * 0.12)
   );
+  vAlpha = enabled * (warpAlpha + weftAlpha);
   vFiberSeed = fiberSeed;
   vWarpWave = isWarp * (abs(ambientWave) * 34.0 + diffuseMask * 0.85 + abs(diffuseWave) * diffuseMask * 0.35 + abs(warpSway) * 27.0);
 
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mvPosition;
   gl_PointSize = (
-    0.9 +
-    (1.0 - luma) * 2.85 +
-    reveal * (0.62 + weftInk * 0.82) +
-    shuttleField * 0.8 +
-    isWarp * ((diffuseMask + horizontalContact * verticalFalloff * motion) * 0.65 + abs(ambientWave) * 9.0)
+    1.22 +
+    (1.0 - luma) * 3.35 +
+    reveal * (0.82 + weftInk * 1.04) +
+    shuttleField * 0.95 +
+    isWarp * ((diffuseMask + horizontalContact * verticalFalloff * motion) * 0.78 + abs(ambientWave) * 10.5)
   ) * uPixelRatio * uPointScale;
 }
 `;
@@ -235,17 +233,12 @@ varying float vWarpWave;
 
 void main() {
   vec2 p = gl_PointCoord * 2.0 - 1.0;
-  float strand = smoothstep(1.0, 0.16, abs(p.y + 0.18 * sin(p.x * 2.2 + vFiberSeed * 6.283)));
-  float cap = smoothstep(1.0, 0.32, length(p));
+  float strand = smoothstep(1.0, 0.28, abs(p.y + 0.18 * sin(p.x * 2.2 + vFiberSeed * 6.283)));
+  float cap = smoothstep(1.0, 0.44, length(p));
   float alpha = strand * cap * vAlpha;
   if (alpha < 0.012) discard;
 
-  float fiber = 0.9 + 0.1 * sin((p.x + p.y) * 18.0 + vFiberSeed * 18.0);
-  vec3 color = vColor.rgb * fiber;
-  float threadLuma = dot(color, vec3(0.299, 0.587, 0.114));
-  color = vec3(threadLuma) + (color - vec3(threadLuma)) * 1.18;
-  color = mix(color * 1.06, color + vec3(0.045), vReveal * 0.12);
-  color += vec3(0.055, 0.045, 0.022) * clamp(vWarpWave, 0.0, 1.0);
+  vec3 color = vColor.rgb;
 
   gl_FragColor = vec4(color, alpha);
 }
@@ -264,6 +257,7 @@ const FABRIC_FRAGMENT = `
 precision highp float;
 
 uniform float uTime;
+uniform float uSurfaceMode;
 uniform vec3 uNeedleUv;
 
 varying vec2 vUv;
@@ -273,17 +267,20 @@ void main() {
   float vignette = smoothstep(0.88, 0.18, length(centered));
   float warp = sin(vUv.x * 720.0) * 0.5 + 0.5;
   float weft = sin(vUv.y * 680.0) * 0.5 + 0.5;
-  float cross = warp * 0.007 + weft * 0.0065;
-  float broad = sin((vUv.x + vUv.y) * 36.0) * 0.004;
+  float cross = warp * 0.006 + weft * 0.0055;
+  float broad = sin((vUv.x + vUv.y) * 36.0) * 0.003;
   float clothBreath = sin(vUv.x * 21.0 + uTime * 0.42) * sin(vUv.y * 17.0 - uTime * 0.34) * 0.006;
   float dNeedle = length((vUv - uNeedleUv.xy) * vec2(1.5, 1.0));
   float pressure = exp(-dNeedle * 9.0) * uNeedleUv.z;
   float ripple = sin(dNeedle * 58.0 - uTime * 14.0) * exp(-dNeedle * 5.4) * uNeedleUv.z;
   float relief = clothBreath + pressure * 0.012 + ripple * 0.024;
-  vec3 base = vec3(0.988, 0.986, 0.978);
-  vec3 color = base - cross + broad + vignette * 0.018;
-  color += vec3(0.62, 0.55, 0.36) * max(relief, 0.0);
-  color -= vec3(0.18, 0.16, 0.1) * max(-relief, 0.0);
+  vec3 darkBase = vec3(0.0015, 0.0015, 0.002) + vec3(cross) + broad + vignette * 0.004;
+  darkBase += vec3(0.13, 0.115, 0.075) * max(relief, 0.0);
+  darkBase -= vec3(0.018, 0.017, 0.014) * max(-relief, 0.0);
+  vec3 lightBase = vec3(0.972, 0.944, 0.88) - vec3(cross * 0.48) + broad * 0.42 + vignette * 0.012;
+  lightBase += vec3(0.22, 0.18, 0.11) * max(relief, 0.0);
+  lightBase -= vec3(0.12, 0.105, 0.075) * max(-relief, 0.0);
+  vec3 color = mix(darkBase, lightBase, uSurfaceMode);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -391,17 +388,7 @@ vec3 aces(vec3 x) {
 }
 
 void main() {
-  vec2 px = 1.0 / max(uResolution, vec2(1.0));
   vec3 color = texture2D(tDiffuse, vUv).rgb;
-  vec3 bloom = vec3(0.0);
-  bloom += max(texture2D(tDiffuse, vUv + px * vec2( 1.5,  0.0)).rgb - 0.72, 0.0);
-  bloom += max(texture2D(tDiffuse, vUv + px * vec2(-1.5,  0.0)).rgb - 0.72, 0.0);
-  bloom += max(texture2D(tDiffuse, vUv + px * vec2( 0.0,  1.5)).rgb - 0.72, 0.0);
-  bloom += max(texture2D(tDiffuse, vUv + px * vec2( 0.0, -1.5)).rgb - 0.72, 0.0);
-  bloom *= 0.25;
-  color += bloom * uBloomStrength;
-  color = aces(color);
-  color = pow(color, vec3(1.0 / 2.2));
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -453,6 +440,7 @@ export function createFabricMaterial() {
     fragmentShader: FABRIC_FRAGMENT,
     uniforms: {
       uTime: { value: 0 },
+      uSurfaceMode: { value: 0 },
       uNeedleUv: { value: new THREE.Vector3(0.5, 0.5, 0) },
     },
     depthTest: true,
